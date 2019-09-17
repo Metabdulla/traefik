@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/containous/traefik/v2/pkg/nacos"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -271,6 +272,9 @@ func (m *Manager) getLoadBalancer(ctx context.Context, serviceName string, servi
 	logger.Debug("Creating load-balancer")
 
 	var options []roundrobin.LBOption
+	if service.NacosService!=nil{
+		return m.getLoadBalancerNacos(ctx,serviceName,service,fwd)
+	}
 
 	var cookieName string
 	if service.Sticky != nil && service.Sticky.Cookie != nil {
@@ -312,3 +316,23 @@ func (m *Manager) upsertServers(ctx context.Context, lb healthcheck.BalancerHand
 	}
 	return nil
 }
+
+func (m*Manager)getLoadBalancerNacos(ctx context.Context, serviceName string, service *dynamic.ServersLoadBalancer, fwd http.Handler)(
+		healthcheck.BalancerHandler, error) {
+	var cookieName string
+	var sesstion *nacos.StickySession
+	if service.Sticky != nil && service.Sticky.Cookie != nil {
+		cookieName = cookie.GetName(service.Sticky.Cookie.Name, serviceName)
+		opts := nacos.CookieOptions{HTTPOnly: service.Sticky.Cookie.HTTPOnly, Secure: service.Sticky.Cookie.Secure}
+		 sesstion = nacos.NewStickySessionWithOptions(cookieName, opts)
+		log.Debugf("Sticky session cookie name: %v", cookieName)
+	}
+
+	lb, err := nacos.New(ctx,fwd,*service.NacosService,serviceName,sesstion)
+	if err != nil {
+		return nil, err
+	}
+	return lb, nil
+}
+
+

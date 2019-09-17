@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/containous/traefik/v2/pkg/nacos"
 	stdlog "log"
 	"net/http"
 	"os"
@@ -148,6 +149,16 @@ func runCmd(staticConfiguration *static.Configuration) error {
 	if staticConfiguration.Ping != nil {
 		staticConfiguration.Ping.WithContext(ctx)
 	}
+
+	//setUp nacos config
+	if staticConfiguration.Nacos!= nil &&staticConfiguration.Nacos.Enable {
+		nacosClient := nacos.NacosClientInit(*staticConfiguration.Nacos)
+		if nacosClient==nil {
+			log.WithoutContext().Errorf("Could not create nacos client")
+			return fmt.Errorf("Could not create nacos client")
+		}
+	}
+
 
 	svr.Start(ctx)
 	defer svr.Close()

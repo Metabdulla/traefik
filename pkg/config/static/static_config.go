@@ -2,6 +2,7 @@ package static
 
 import (
 	"fmt"
+	"github.com/containous/traefik/v2/pkg/config/nacos"
 	stdlog "log"
 	"strings"
 	"time"
@@ -62,6 +63,8 @@ type Configuration struct {
 	HostResolver *types.HostResolverConfig `description:"Enable CNAME Flattening." json:"hostResolver,omitempty" toml:"hostResolver,omitempty" yaml:"hostResolver,omitempty" label:"allowEmpty" export:"true"`
 
 	CertificatesResolvers map[string]CertificateResolver `description:"Certificates resolvers configuration." json:"certificatesResolvers,omitempty" toml:"certificatesResolvers,omitempty" yaml:"certificatesResolvers,omitempty" export:"true"`
+
+	Nacos *nacos.Nacos  `description:"nacos configuration options" json:"nacos,omitempty" toml:"nacos,omitempty" yaml:"nacos,omitempty" export:"true"`
 }
 
 // CertificateResolver contains the configuration for the different types of certificates resolver.
@@ -143,6 +146,8 @@ type Tracing struct {
 	Instana       *instana.Config  `description:"Settings for Instana." json:"instana,omitempty" toml:"instana,omitempty" yaml:"instana,omitempty" export:"true" label:"allowEmpty"`
 	Haystack      *haystack.Config `description:"Settings for Haystack." json:"haystack,omitempty" toml:"haystack,omitempty" yaml:"haystack,omitempty" export:"true" label:"allowEmpty"`
 }
+
+
 
 // SetDefaults sets the default values.
 func (t *Tracing) SetDefaults() {

@@ -2,6 +2,7 @@ package static
 
 import (
 	"fmt"
+	"github.com/containous/traefik/v2/pkg/config/dynamic"
 	"github.com/containous/traefik/v2/pkg/config/nacos"
 	stdlog "log"
 	"strings"
@@ -93,6 +94,8 @@ type API struct {
 	// TODO: Re-enable statistics
 	// Statistics      *types.Statistics `description:"Enable more detailed statistics." json:"statistics,omitempty" toml:"statistics,omitempty" yaml:"statistics,omitempty" export:"true" label:"allowEmpty"`
 	DashboardAssets *assetfs.AssetFS `json:"-" toml:"-" yaml:"-" label:"-"`
+
+	BasicAuth         *dynamic.BasicAuth `json:"basicAuth,omitempty" toml:"basicAuth,omitempty" yaml:"basicAuth,omitempty"`
 }
 
 // SetDefaults sets the default values.

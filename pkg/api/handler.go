@@ -1,8 +1,11 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/containous/traefik/v2/pkg/config/dynamic"
+	"github.com/containous/traefik/v2/pkg/middlewares/auth"
 	"net/http"
 	"strconv"
 	"strings"
@@ -53,6 +56,8 @@ type Handler struct {
 	// stats                *thoasstats.Stats // FIXME stats
 	// StatsRecorder         *middlewares.StatsRecorder // FIXME stats
 	dashboardAssets *assetfs.AssetFS
+
+	BasicAuth  *dynamic.BasicAuth
 }
 
 // New returns a Handler defined by staticConfig, and if provided, by runtimeConfig.
@@ -70,6 +75,7 @@ func New(staticConfig static.Configuration, runtimeConfig *runtime.Configuration
 		runtimeConfiguration: rConfig,
 		staticConfig:         staticConfig,
 		debug:                staticConfig.API.Debug,
+		BasicAuth: staticConfig.API.BasicAuth,
 	}
 }
 
@@ -78,26 +84,112 @@ func (h Handler) Append(router *mux.Router) {
 	if h.debug {
 		DebugHandler{}.Append(router)
 	}
+	if h.BasicAuth!=nil {
+		ctx := context.Background()
+		getRuntimeConfiguration ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getRuntimeConfiguration),*h.BasicAuth,"getRuntimeConfiguration")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/rawdata").HandlerFunc(getRuntimeConfiguration.ServeHTTP)
 
-	router.Methods(http.MethodGet).Path("/api/rawdata").HandlerFunc(h.getRuntimeConfiguration)
+		// Experimental endpoint
+		getOverview ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getOverview),*h.BasicAuth,"getOverview")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/overview").HandlerFunc(getOverview.ServeHTTP)
 
-	// Experimental endpoint
-	router.Methods(http.MethodGet).Path("/api/overview").HandlerFunc(h.getOverview)
+		getEntryPoints ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getEntryPoints),*h.BasicAuth,"getEntryPoints")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/entrypoints").HandlerFunc(getEntryPoints.ServeHTTP)
 
-	router.Methods(http.MethodGet).Path("/api/entrypoints").HandlerFunc(h.getEntryPoints)
-	router.Methods(http.MethodGet).Path("/api/entrypoints/{entryPointID}").HandlerFunc(h.getEntryPoint)
+		getEntryPoint ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getEntryPoint),*h.BasicAuth,"getEntryPoint")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/entrypoints/{entryPointID}").HandlerFunc(getEntryPoint.ServeHTTP)
 
-	router.Methods(http.MethodGet).Path("/api/http/routers").HandlerFunc(h.getRouters)
-	router.Methods(http.MethodGet).Path("/api/http/routers/{routerID}").HandlerFunc(h.getRouter)
-	router.Methods(http.MethodGet).Path("/api/http/services").HandlerFunc(h.getServices)
-	router.Methods(http.MethodGet).Path("/api/http/services/{serviceID}").HandlerFunc(h.getService)
-	router.Methods(http.MethodGet).Path("/api/http/middlewares").HandlerFunc(h.getMiddlewares)
-	router.Methods(http.MethodGet).Path("/api/http/middlewares/{middlewareID}").HandlerFunc(h.getMiddleware)
+		getRouters ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getRouters),*h.BasicAuth,"getRouters")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/http/routers").HandlerFunc(getRouters.ServeHTTP)
+		getRouter ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getRouter),*h.BasicAuth,"getRouter")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/http/routers/{routerID}").HandlerFunc(getRouter.ServeHTTP)
 
-	router.Methods(http.MethodGet).Path("/api/tcp/routers").HandlerFunc(h.getTCPRouters)
-	router.Methods(http.MethodGet).Path("/api/tcp/routers/{routerID}").HandlerFunc(h.getTCPRouter)
-	router.Methods(http.MethodGet).Path("/api/tcp/services").HandlerFunc(h.getTCPServices)
-	router.Methods(http.MethodGet).Path("/api/tcp/services/{serviceID}").HandlerFunc(h.getTCPService)
+		getServices ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getServices),*h.BasicAuth,"getServices")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/http/services").HandlerFunc(getServices.ServeHTTP)
+
+		getService ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getService),*h.BasicAuth,"getService")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/http/services/{serviceID}").HandlerFunc(getService.ServeHTTP)
+
+		getMiddlewares ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getMiddlewares),*h.BasicAuth,"getMiddlewares")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/http/middlewares").HandlerFunc(getMiddlewares.ServeHTTP)
+
+		getMiddleware ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getMiddleware),*h.BasicAuth,"getMiddleware")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/http/middlewares/{middlewareID}").HandlerFunc(getMiddleware.ServeHTTP)
+
+		getTCPRouters ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getTCPRouters),*h.BasicAuth,"getTCPRouters")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/tcp/routers").HandlerFunc(getTCPRouters.ServeHTTP)
+
+		getTCPRouter ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getTCPRouter),*h.BasicAuth,"getTCPRouter")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/tcp/routers/{routerID}").HandlerFunc(getTCPRouter.ServeHTTP)
+		getTCPServices ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getTCPServices),*h.BasicAuth,"getTCPServices")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/tcp/services").HandlerFunc(getTCPServices.ServeHTTP)
+		getTCPService ,err := auth.NewBasic(ctx,http.HandlerFunc(h.getTCPService),*h.BasicAuth,"getTCPService")
+		if err!=nil {
+			panic(err)
+		}
+		router.Methods(http.MethodGet).Path("/api/tcp/services/{serviceID}").HandlerFunc(getTCPService.ServeHTTP)
+
+	}else {
+
+		router.Methods(http.MethodGet).Path("/api/rawdata").HandlerFunc(h.getRuntimeConfiguration)
+
+		// Experimental endpoint
+		router.Methods(http.MethodGet).Path("/api/overview").HandlerFunc(h.getOverview)
+
+		router.Methods(http.MethodGet).Path("/api/entrypoints").HandlerFunc(h.getEntryPoints)
+		router.Methods(http.MethodGet).Path("/api/entrypoints/{entryPointID}").HandlerFunc(h.getEntryPoint)
+
+		router.Methods(http.MethodGet).Path("/api/http/routers").HandlerFunc(h.getRouters)
+		router.Methods(http.MethodGet).Path("/api/http/routers/{routerID}").HandlerFunc(h.getRouter)
+		router.Methods(http.MethodGet).Path("/api/http/services").HandlerFunc(h.getServices)
+		router.Methods(http.MethodGet).Path("/api/http/services/{serviceID}").HandlerFunc(h.getService)
+		router.Methods(http.MethodGet).Path("/api/http/middlewares").HandlerFunc(h.getMiddlewares)
+		router.Methods(http.MethodGet).Path("/api/http/middlewares/{middlewareID}").HandlerFunc(h.getMiddleware)
+
+		router.Methods(http.MethodGet).Path("/api/tcp/routers").HandlerFunc(h.getTCPRouters)
+		router.Methods(http.MethodGet).Path("/api/tcp/routers/{routerID}").HandlerFunc(h.getTCPRouter)
+		router.Methods(http.MethodGet).Path("/api/tcp/services").HandlerFunc(h.getTCPServices)
+		router.Methods(http.MethodGet).Path("/api/tcp/services/{serviceID}").HandlerFunc(h.getTCPService)
+	}
 
 	// FIXME stats
 	// health route
@@ -111,6 +203,7 @@ func (h Handler) Append(router *mux.Router) {
 }
 
 func (h Handler) getRuntimeConfiguration(rw http.ResponseWriter, request *http.Request) {
+
 	siRepr := make(map[string]*serviceInfoRepresentation, len(h.runtimeConfiguration.Services))
 	for k, v := range h.runtimeConfiguration.Services {
 		siRepr[k] = &serviceInfoRepresentation{
